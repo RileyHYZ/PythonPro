@@ -16,6 +16,8 @@ class CurrencyConverter:
           
     def convert(self,amount,from_currency,to_currency):
         initial_amount = amount
+        if from_currency == to_currency:
+            return amount
         if from_currency!="EUR":
             amount=amount/self.rates[from_currency]
         if to_currency == "EUR":
@@ -33,7 +35,8 @@ class ExchangeConverter:
         if not input_text: # the field is being cleared
             self.entered_number = 0.0
             return True
-        
+        if self.enable_operations == False:
+            return False
         try:
             self.entered_number = float(input_text)
             self.entered_number = (int)(self.entered_number*100)/100.0
@@ -42,19 +45,30 @@ class ExchangeConverter:
             return False
 
     def update(self, method):
-        if method == "add":
-            print(self.entered_number)
+        print("update")
+        if method == "add" and self.enable_operations == True:
             self.total += self.entered_number
-        elif method == "subtract":
+            self.amount = converter.convert(self.total, self.tkvar_1.get(), self.tkvar_2.get())
+        elif method == "subtract" and self.enable_operations == True:
             self.total -= self.entered_number
+            self.amount = converter.convert(self.total, self.tkvar_1.get(), self.tkvar_2.get())
         else: # reset
-            self.total = 0
+            self.total = 0.0
+            self.amount = 0.0
+            self.menu_1.configure(state="active")
+            self.menu_2.configure(state="active")
+            self.enable_operations = False
 
         self.total_label_text.set((int)(self.total*100)/100.0)
+        self.amount_label_text.set((int)(self.amount*100)/100.0)
         self.entry.delete(0, END)
     
-    def updateSummary(self,tkvar_1,tkvar_2):
-        self.amount = converter.convert(self.entered_number,tkvar_1.get(),tkvar_2.get())   
+    def confirm(self):
+        self.menu_1.configure(state="disable")
+        self.menu_2.configure(state="disable")
+        self.from_label_text.set(self.tkvar_1.get())
+        self.to_label_text.set(self.tkvar_2.get())
+        self.enable_operations = True     
     
     def __init__(self, master):
         self.master = master
@@ -65,72 +79,58 @@ class ExchangeConverter:
         self.total = 0.0
         self.entered_number = 0.0
         self.amount = 0.0
+        self.enable_operations = False
         
-        #convert currency from(drop-down menu)
+        #convert currency from
         self.label1 = Label(master, text="Convert Currency From")
         #drop-down menu
-        #currencies
-        tkvar_1 = StringVar(master)
-        tkvar_1.set("CAD")
-        self.menu_1=OptionMenu(master,tkvar_1,*list_currencies())
-        #self.menu_1.pack()
-        
-        ##MARK FIRST CURRENCY
-        
-        #convert to(drop-down menu)
+        self.tkvar_1 = StringVar(master)
+        self.tkvar_1.set("CAD")
+        self.menu_1=OptionMenu(master,self.tkvar_1,*sorted(list_currencies()))
+
+        #convert to
         self.label2 = Label(master, text="To")
         #drop-down menu
-        tkvar_2 = StringVar(master)
-        tkvar_2.set("CAD")
-        self.menu_2=OptionMenu(master,tkvar_2,*list_currencies())
-        #self.menu_2.pack()
+        self.tkvar_2 = StringVar(master)
+        self.tkvar_2.set("CAD")
+        self.menu_2=OptionMenu(master,self.tkvar_2,*sorted(list_currencies()))
         
+        #confirm(disable menu)
+        self.confirm_button = Button(master, text="confirm", command=lambda: self.confirm())
         
         #Amount of money(input text)
         #input must be valid numbers(int/double with two decimal places)
         self.label3 = Label(master, text="Amount to convert")
         vcmd = master.register(self.validate)
-        print(vcmd)
         self.entry = Entry(master, validate="key", validatecommand=(vcmd, '%P'))
-        self.confirm_button = Button(master, text="confirm", command=self.updateSummary(tkvar_1,tkvar_2))
         
-        
-        
-        print(self.entered_number)
         #update a section summary 
-        self.amount_label_text = IntVar()
-        self.amount_label_text.set(self.amount)
-        self.initamount_label_text = IntVar()
-        self.initamount_label_text.set(self.entered_number)
-        self.label4_0 = Label(master, text="You are converting")
-        self.initial_amount_label = Label(master, textvariable=self.initamount_label_text)
-        self.label4_1 = Label(master, text=tkvar_1.get()+" to ")
-        self.amount_label = Label(master, textvariable=self.amount_label_text)
-        self.label4_2 = Label(master, text=tkvar_2.get())
-        #self.label4 = Label(master, text="You are converting "+converter.convert(self.entered_number,tkvar_1.get(),tkvar_2.get()))
-        
-        
-        
-        
-        
-        #Add/Subtract Button & Reset
+        #Add/Subtract Button(menu disabled) & Reset(menu active, everything=0)
         self.add_button = Button(master, text="+", command=lambda: self.update("add"))
         self.subtract_button = Button(master, text="-", command=lambda: self.update("subtract"))
         self.reset_button = Button(master, text="Reset", command=lambda: self.update("reset"))
         
-        
-        
-       
         #update to total
         #check if valid(unit of currency must align)
         #do the addition/subtraction
         
-        self.label5 = Label(master, text="Total")
+        #Total
+        self.label4 = Label(master, text="Total:")
         self.total_label_text = IntVar()
         self.total_label_text.set(self.total)
-        self.total_label = Label(master, textvariable=self.total_label_text)
+        self.total_label = Label(master, textvariable = self.total_label_text)
+        self.from_label_text = StringVar()
+        self.from_label_text.set(self.tkvar_1.get())
+        self.from_label = Label(master, textvariable = self.from_label_text)
 
-
+        #Calculated result
+        self.eq_label = Label(master, text="≈")
+        self.amount_label_text = IntVar()
+        self.amount_label_text.set(self.amount)
+        self.amount_label = Label(master, textvariable = self.amount_label_text)
+        self.to_label_text = StringVar()
+        self.to_label_text.set(self.tkvar_2.get())
+        self.to_label = Label(master, textvariable = self.to_label_text)
         
         
 
@@ -143,29 +143,26 @@ class ExchangeConverter:
         #to #menu_2
         self.label2.grid(row=2, column=2, sticky=E)
         self.menu_2.grid(row=2, column=4,sticky=W)
+        #confirm button
+        self.confirm_button.grid(row=2,column=5,sticky=W)
         #Amount to convert
         self.label3.grid(row=3, column=2,columnspan=1, sticky=E)
         self.entry.grid(row=3, column=4, columnspan=2, sticky=W)
-        #confirm
-        self.confirm_button.grid(row=3,column=6)
-        
-        
-        self.label4_0.grid(row=4, column=2, sticky=W)
-        
-        self.initial_amount_label.grid(row=4, column=2, sticky=E)
-        self.label4_1.grid(row=4, column=3, sticky=E)
-        self.amount_label.grid(row=4, column=4, sticky=E)
-        self.label4_2.grid(row=4, column=6, sticky=E)
-        self.label5.grid(row=8, column=2, columnspan=2,sticky=E)
-        self.entry.grid(row=3, column=4, columnspan=2, sticky=W+E)
-        
-        self.total_label.grid(row=8, column=4, columnspan=4, sticky=W)
+        #Add, Subtract, Reset
+        self.add_button.grid(row=4, column=2)
+        self.subtract_button.grid(row=4, column=3)
+        self.reset_button.grid(row=4, column=5, sticky=W)
+        #total
+        self.label4.grid(row=5, column=2, sticky=W+E)
+        self.total_label.grid(row=5, column=4, sticky=E)
+        self.from_label.grid(row=5,column=5, sticky=W)
+        self.eq_label.grid(row=6,column=3, sticky=W)
+        self.amount_label.grid(row=6,column=4,sticky=E)
+        self.to_label.grid(row=6,column=5, sticky=W)
 
         
 
-        self.add_button.grid(row=7, column=2)
-        self.subtract_button.grid(row=7, column=3)
-        self.reset_button.grid(row=7, column=5, sticky=W+E)
+       
 
 
 
