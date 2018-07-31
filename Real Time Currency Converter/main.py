@@ -1,5 +1,6 @@
 from tkinter import Tk, Label, Button, Entry, IntVar, END, W, E, OptionMenu,\
     StringVar
+from tkinter import messagebox
 from babel.numbers import list_currencies
 import urllib.request
 import json
@@ -15,6 +16,14 @@ class CurrencyConverter:
         self.rates=data["rates"]
           
     def convert(self,amount,from_currency,to_currency):
+        if(to_currency not in self.rates):
+            print("Ahhh")
+            messagebox.showinfo("Warning", "Sorry! "+ to_currency+" is not available at this moment. Please choose another currency.")
+            return 0
+        if(from_currency not in self.rates):
+            print("Ahhh")
+            messagebox.showinfo("Warning", "Sorry! "+ from_currency+ " is not available at this moment. Please reset and choose another currency.")
+            return 0
         initial_amount = amount
         if from_currency == to_currency:
             return amount
@@ -58,7 +67,9 @@ class ExchangeConverter:
             self.menu_1.configure(state="active")
             self.menu_2.configure(state="active")
             self.enable_operations = False
-
+        
+        if(self.amount==0):
+            self.total=0
         self.total_label_text.set((int)(self.total*100)/100.0)
         self.amount_label_text.set((int)(self.amount*100)/100.0)
         self.entry.delete(0, END)
